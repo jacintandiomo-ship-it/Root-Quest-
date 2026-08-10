@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Root Quest - Terminal</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/terminal.css">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+<base target="_blank">
+</head>
+<body class="game-body">
+
+<div class="game-layout">
+
+    <!-- ===== SIDEBAR GAUCHE : CARTE DES MONDES ===== -->
+    <aside class="worlds-sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-logo">🛡️ ROOT QUEST</div>
+            <div class="sidebar-version">v1.0</div>
+        </div>
+
+        <div class="sidebar-section">
+            <div class="sidebar-title">🗺️ CARTE DES MONDES</div>
+            <div class="worlds-list" id="worlds-list">
+                <!-- Généré par JS -->
+            </div>
+        </div>
+
+        <div class="sidebar-section">
+            <div class="sidebar-title">📊 PROGRESSION</div>
+            <div class="progress-box">
+                <div class="progress-bar-bg">
+                    <div class="progress-bar-fill" id="progress-fill"></div>
+                </div>
+                <div class="progress-text" id="progress-text">0% complété</div>
+            </div>
+            <div class="xp-display" id="sidebar-xp">⭐ 0 XP</div>
+        </div>
+
+        <div class="sidebar-section">
+            <div class="sidebar-title">👤 AGENT</div>
+            <div class="agent-card" id="sidebar-agent">
+                <div class="agent-avatar">👤</div>
+                <div class="agent-name">Agent</div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- ===== ZONE PRINCIPALE ===== -->
+    <main class="main-area">
+
+        <!-- Header de mission -->
+        <div class="mission-card">
+            <div class="mission-card-header">
+                <div class="mission-badge" id="mission-badge">MONDE 1 — NIVEAU 1-1</div>
+                <div class="mission-xp-badge" id="mission-xp-badge">+100 XP</div>
+            </div>
+            <h2 class="mission-card-title" id="mission-card-title">L'Éveil</h2>
+            <p class="mission-card-story" id="mission-card-story">Chargement...</p>
+            <div class="mission-card-objective">
+                <span class="objective-label">🎯 OBJECTIF :</span>
+                <span class="objective-text" id="mission-card-objective">...</span>
+            </div>
+            <button class="hint-btn-card" onclick="showHintOverlay()">💡 Besoin d'un indice ?</button>
+        </div>
+
+        <!-- Terminal -->
+        <div class="terminal-wrapper">
+            <div class="terminal-header-bar">
+                <span class="terminal-dots">
+                    <span class="t-dot red"></span>
+                    <span class="t-dot yellow"></span>
+                    <span class="t-dot green"></span>
+                </span>
+                <span class="terminal-title-bar">Terminal O.S.I.R.I.S.</span>
+                <span class="terminal-status">● Connecté</span>
+            </div>
+            <div class="terminal-body-area">
+                <div class="terminal-history" id="terminal-history"></div>
+                <div class="terminal-input-area">
+                    <span class="terminal-prompt" id="terminal-prompt">agent@osiris:~$</span>
+                    <input type="text" id="terminal-input" autocomplete="off" spellcheck="false" autofocus>
+                </div>
+            </div>
+        </div>
+
+        <!-- Boutons de commandes rapides -->
+        <div class="quick-cmds">
+            <span class="quick-label">⚡ Commandes rapides :</span>
+            <button class="quick-btn" onclick="injectCmd('ls')">ls</button>
+            <button class="quick-btn" onclick="injectCmd('cd')">cd</button>
+            <button class="quick-btn" onclick="injectCmd('pwd')">pwd</button>
+            <button class="quick-btn" onclick="injectCmd('cat')">cat</button>
+            <button class="quick-btn" onclick="injectCmd('mkdir')">mkdir</button>
+            <button class="quick-btn" onclick="injectCmd('rm')">rm</button>
+            <button class="quick-btn" onclick="injectCmd('cp')">cp</button>
+            <button class="quick-btn" onclick="injectCmd('mv')">mv</button>
+            <button class="quick-btn" onclick="injectCmd('man')">man</button>
+            <button class="quick-btn" onclick="injectCmd('help')">help</button>
+            <button class="quick-btn" onclick="injectCmd('clear')">clear</button>
+        </div>
+
+    </main>
+
+</div>
+
+<!-- OVERLAY INDICES -->
+<div class="hint-overlay" id="hint-overlay" onclick="hideHintOverlay(event)">
+    <div class="hint-box" onclick="event.stopPropagation()">
+        <h3>💡 Indices disponibles</h3>
+        <div id="hint-list"></div>
+        <button class="screen-btn" onclick="hideHintOverlay()">Fermer</button>
+    </div>
+</div>
+
+<!-- OVERLAY VICTOIRE -->
+<div class="victory-overlay" id="victory-overlay">
+    <div class="victory-box">
+        <div class="victory-icon">🎉</div>
+        <h2 id="victory-title">Niveau terminé !</h2>
+        <p id="victory-message">Mission accomplie.</p>
+        <div class="xp-earned" id="victory-xp">+0 XP</div>
+        <button class="screen-btn" id="victory-next" onclick="nextLevel()">Niveau suivant ➜</button>
+    </div>
+</div>
+
+<script src="js/levels-data.js"></script>
+<script src="js/game-engine.js"></script>
+
+</body>
+</html>

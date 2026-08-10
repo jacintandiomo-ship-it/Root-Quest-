@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Root Quest</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+<base target="_blank">
+</head>
+<body>
+
+<!-- ==================== ÉCRAN 1 : CRÉDIT CRÉATEUR ==================== -->
+<div id="screen-creator" class="fullscreen-screen active">
+    <div class="creator-content">
+        <div class="creator-icon">🛡️</div>
+        <div class="creator-title">ROOT QUEST</div>
+        <div class="creator-line"></div>
+        <div class="creator-text">
+            Un jeu créé par<br>
+            <span class="creator-name">L'Ingénieur Ndiomo Mbazoa Jacinta</span><br>
+            <span class="creator-degree">Ingénieur en Système et Réseau</span><br>
+            <span class="creator-degree">Maître en Sécurité des Systèmes d'Information</span>
+        </div>
+        <div class="creator-sub">Une nouvelle initiative éducative</div>
+    </div>
+</div>
+
+<!-- ==================== ÉCRAN 2 : CHOIX DU NOM ==================== -->
+<div id="screen-name" class="fullscreen-screen">
+    <div class="screen-content">
+        <div class="screen-icon">👤</div>
+        <h2>Bienvenue, Agent</h2>
+        <p class="screen-desc">L'O.S.I.R.I.S. a besoin de vous. Mais d'abord, qui êtes-vous ?</p>
+        <div class="name-form">
+            <input type="text" id="agent-name-input" placeholder="Votre nom d'agent (ex: Sarah, Jean, Alex...)" maxlength="20">
+            <div class="gender-choices">
+                <button class="gender-btn" onclick="selectGender('M')" id="btn-m">👨 Homme</button>
+                <button class="gender-btn" onclick="selectGender('F')" id="btn-f">👩 Femme</button>
+                <button class="gender-btn" onclick="selectGender('N')" id="btn-n">🎭 Neutre</button>
+            </div>
+            <button class="screen-btn" onclick="goToTheme()">Continuer ➜</button>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== ÉCRAN 3 : CHOIX DU THÈME ==================== -->
+<div id="screen-theme" class="fullscreen-screen">
+    <div class="screen-content">
+        <div class="screen-icon">🎨</div>
+        <h2>Choisissez Votre Univers</h2>
+        <p class="screen-desc">Comment voulez-vous voir le terminal ?</p>
+        <div class="themes-grid-big">
+            <div class="theme-card" onclick="setTheme('hacker')">
+                <div class="theme-preview-box" style="background:#000; border-color:#00ff41;">
+                    <div style="color:#00ff41; font-family:monospace; font-size:10px;">$ ls<br><span style="color:#aaa;">fichiers</span></div>
+                </div>
+                <span class="theme-name">Hacker Classic</span>
+                <span class="theme-desc">Le terminal Linux authentique</span>
+            </div>
+            <div class="theme-card" onclick="setTheme('cyberpunk')">
+                <div class="theme-preview-box" style="background:#0a0a1a; border-color:#ff00ff;">
+                    <div style="color:#00ffff; font-family:monospace; font-size:10px;">$ ls<br><span style="color:#aaaaff;">fichiers</span></div>
+                </div>
+                <span class="theme-name">Cyberpunk Neon</span>
+                <span class="theme-desc">Futuriste et immersif</span>
+            </div>
+            <div class="theme-card" onclick="setTheme('pro')">
+                <div class="theme-preview-box" style="background:#1a1a2e; border-color:#4a9eff;">
+                    <div style="color:#4a9eff; font-family:monospace; font-size:10px;">$ ls<br><span style="color:#a0a0c0;">fichiers</span></div>
+                </div>
+                <span class="theme-name">Terminal Pro</span>
+                <span class="theme-desc">Sobre et professionnel</span>
+            </div>
+            <div class="theme-card" onclick="setTheme('solarized')">
+                <div class="theme-preview-box" style="background:#002b36; border-color:#b58900;">
+                    <div style="color:#2aa198; font-family:monospace; font-size:10px;">$ ls<br><span style="color:#839496;">fichiers</span></div>
+                </div>
+                <span class="theme-name">Solarized Dark</span>
+                <span class="theme-desc">Reposant pour les yeux</span>
+            </div>
+            <div class="theme-card" onclick="setTheme('light')">
+                <div class="theme-preview-box" style="background:#f5f5f5; border-color:#333;">
+                    <div style="color:#0066cc; font-family:monospace; font-size:10px;">$ ls<br><span style="color:#666;">fichiers</span></div>
+                </div>
+                <span class="theme-name">Light Mode</span>
+                <span class="theme-desc">Accessibilité maximale</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== ÉCRAN 4 : CINÉMATIQUE ==================== -->
+<div id="screen-story" class="fullscreen-screen">
+    <div class="cinematic-container">
+        <div class="cinematic-date">21 AOÛT 2026 — 03:14 AM</div>
+        <div class="cinematic-text" id="story-text"></div>
+        <button class="screen-btn skip-btn" onclick="skipStory()">Passer l'intro ⏭</button>
+    </div>
+</div>
+
+<!-- ==================== ÉCRAN 5 : CARTE SYSTÈME LINUX ==================== -->
+<div id="screen-filesystem" class="fullscreen-screen">
+    <div class="screen-content wide scrollable">
+        <div class="screen-icon">🗺️</div>
+        <h2>Carte du Système O.S.I.R.I.S.</h2>
+        <p class="screen-desc">Avant de partir en mission, connaissez votre terrain. En Linux, tout est fichier.</p>
+
+        <div class="fs-grid">
+            <div class="fs-item">
+                <div class="fs-icon">🏛️</div>
+                <div class="fs-path">/</div>
+                <div class="fs-name">Le Sanctuaire</div>
+                <div class="fs-desc">Le point de départ absolu. Tout part d'ici.</div>
+            </div>
+            <div class="fs-item">
+                <div class="fs-icon">🏠</div>
+                <div class="fs-path">/home</div>
+                <div class="fs-name">Quartiers Résidentiels</div>
+                <div class="fs-desc">Votre territoire personnel. Vos fichiers, vos configs.</div>
+            </div>
+            <div class="fs-item">
+                <div class="fs-icon">⚙️</div>
+                <div class="fs-path">/etc</div>
+                <div class="fs-name">Centre de Commande</div>
+                <div class="fs-desc">Configurations système, mots de passe, réseau.</div>
+            </div>
+            <div class="fs-item">
+                <div class="fs-icon">📜</div>
+                <div class="fs-path">/var</div>
+                <div class="fs-name">Archives Vivantes</div>
+                <div class="fs-desc">Logs, mails, bases de données. Ils grandissent sans cesse.</div>
+            </div>
+            <div class="fs-item">
+                <div class="fs-icon">🗑️</div>
+                <div class="fs-path">/tmp</div>
+                <div class="fs-name">Zone Éphémère</div>
+                <div class="fs-desc">Fichiers temporaires. Tout disparaît au redémarrage.</div>
+            </div>
+            <div class="fs-item">
+                <div class="fs-icon">🧰</div>
+                <div class="fs-path">/usr</div>
+                <div class="fs-name">L'Arsenal</div>
+                <div class="fs-desc">Programmes installés, documentation, outils.</div>
+            </div>
+            <div class="fs-item">
+                <div class="fs-icon">⚔️</div>
+                <div class="fs-path">/bin</div>
+                <div class="fs-name">Armurerie de Base</div>
+                <div class="fs-desc">Commandes essentielles disponibles pour tous.</div>
+            </div>
+            <div class="fs-item">
+                <div class="fs-icon">🛡️</div>
+                <div class="fs-path">/sbin</div>
+                <div class="fs-name">Armurerie d'Élite</div>
+                <div class="fs-desc">Commandes d'administration. Réservées au root.</div>
+            </div>
+            <div class="fs-item">
+                <div class="fs-icon">🔌</div>
+                <div class="fs-path">/dev</div>
+                <div class="fs-name">Matrice Matérielle</div>
+                <div class="fs-desc">Périphériques = fichiers. Disques, terminaux, ports.</div>
+            </div>
+            <div class="fs-item">
+                <div class="fs-icon">🧬</div>
+                <div class="fs-path">/proc</div>
+                <div class="fs-name">ADN du Système</div>
+                <div class="fs-desc">Fichiers virtuels. État du noyau en temps réel.</div>
+            </div>
+            <div class="fs-item">
+                <div class="fs-icon">🚀</div>
+                <div class="fs-path">/boot</div>
+                <div class="fs-name">Sas de Lancement</div>
+                <div class="fs-desc">Fichiers nécessaires au démarrage du système.</div>
+            </div>
+            <div class="fs-item">
+                <div class="fs-icon">📦</div>
+                <div class="fs-path">/opt</div>
+                <div class="fs-name">Le Hangar</div>
+                <div class="fs-desc">Logiciels optionnels et tiers.</div>
+            </div>
+        </div>
+
+        <button class="screen-btn" onclick="goToHome()">J'ai mémorisé la carte ➜</button>
+    </div>
+</div>
+
+<!-- ==================== ÉCRAN 6 : PAGE D'ACCUEIL ==================== -->
+<div id="screen-home" class="fullscreen-screen">
+    <div class="bg-grid"></div>
+    <div class="bg-glow"></div>
+
+    <header class="main-header">
+        <div class="logo">
+            <span class="logo-icon">🛡️</span>
+            <span class="logo-text">ROOT QUEST</span>
+        </div>
+        <div class="agent-display" id="agent-display"></div>
+    </header>
+
+    <main class="hero">
+        <div class="hero-content">
+            <div class="hero-badge">🎮 JEU ÉDUCATIF LINUX</div>
+            <h1 class="hero-title">
+                Apprends Linux<br>
+                <span class="highlight">en sauvant le monde</span>
+            </h1>
+            <p class="hero-subtitle">
+                Un terminal. Une mission. Une commande à la fois.<br>
+                De débutant complet à SysAdmin expert — sans t'en rendre compte.
+            </p>
+            <div class="hero-stats">
+                <div class="stat"><span class="stat-number">7</span><span class="stat-label">Mondes</span></div>
+                <div class="stat"><span class="stat-number">89</span><span class="stat-label">Niveaux</span></div>
+                <div class="stat"><span class="stat-number">20+</span><span class="stat-label">Semaines</span></div>
+            </div>
+            <button class="btn-primary" onclick="startGame()">🚀 Commencer la mission</button>
+        </div>
+        <div class="hero-terminal">
+            <div class="terminal-window">
+                <div class="terminal-header">
+                    <span class="terminal-btn red"></span>
+                    <span class="terminal-btn yellow"></span>
+                    <span class="terminal-btn green"></span>
+                    <span class="terminal-title">agent@osiris:~$</span>
+                </div>
+                <div class="terminal-body">
+                    <div class="line"><span class="prompt">$</span> <span class="cmd">ls</span></div>
+                    <div class="line output">missions  preuves  virus.log</div>
+                    <div class="line"><span class="prompt">$</span> <span class="cmd">cat virus.log</span></div>
+                    <div class="line output alert">⚠️  INTRUSION DÉTECTÉE</div>
+                    <div class="line"><span class="prompt">$</span> <span class="cursor">_</span></div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script>
+// ============ VARIABLES GLOBALES ============
+let agentName = "Agent";
+let agentGender = "N";
+let selectedTheme = "cyberpunk";
+
+// ============ ÉCRAN 1 : CRÉDIT ============
+setTimeout(() => {
+    document.getElementById('screen-creator').classList.add('fade-out');
+    setTimeout(() => {
+        document.getElementById('screen-creator').classList.remove('active');
+        document.getElementById('screen-name').classList.add('active');
+    }, 1000);
+}, 5000);
+
+// ============ ÉCRAN 2 : NOM ============
+function selectGender(g) {
+    agentGender = g;
+    document.querySelectorAll('.gender-btn').forEach(b => b.classList.remove('selected'));
+    document.getElementById('btn-' + g.toLowerCase()).classList.add('selected');
+}
+
+function goToTheme() {
+    const name = document.getElementById('agent-name-input').value.trim();
+    if (name) agentName = name;
+    if (!agentGender) { alert("Veuillez choisir un genre."); return; }
+
+    document.getElementById('screen-name').classList.remove('active');
+    document.getElementById('screen-theme').classList.add('active');
+}
+
+// ============ ÉCRAN 3 : THÈME ============
+function setTheme(theme) {
+    selectedTheme = theme;
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('rootquest-theme', theme);
+    localStorage.setItem('rootquest-name', agentName);
+    localStorage.setItem('rootquest-gender', agentGender);
+
+    document.getElementById('screen-theme').classList.remove('active');
+    document.getElementById('screen-story').classList.add('active');
+    startStory();
+}
+
+// ============ ÉCRAN 4 : CINÉMATIQUE ============
+const storyLines = [
+    "21 AOÛT 2026. 03:14 AM.",
+    "Les serveurs secrets de l'État viennent d'être infiltrés.",
+    "Système d'exploitation :Linux Ubuntu.",
+    "Niveau de menace : CRITIQUE.",
+    "Le virus 'Glitch Éternel' s'est propagé dans l'infrastructure.",
+    "Les données classifiées sont compromises.",
+    "L'armée du Cyberespace est débordée.",
+    "",
+    "Seule l'O.S.I.R.I.S. peut agir.",
+    "Organisation des Systèmes Informatiques",
+    "de Renseignement et d'Investigation Sécurisée.",
+    "",
+    "Vous, " + agentName + ", êtes notre dernier espoir.",
+    "Vous ne connaissez pas encore Linux.",
+    "Mais vous allez apprendre.",
+    "Une commande à la fois.",
+    "Une mission à la fois.",
+    "",
+    "Le monde compte sur vous, agent.",
+    "",
+    "Bienvenue dans Root Quest."
+];
+
+function startStory() {
+    const container = document.getElementById('story-text');
+    container.innerHTML = '';
+    let i = 0;
+
+    function typeLine() {
+        if (i >= storyLines.length) {
+            setTimeout(() => goToFilesystem(), 2000);
+            return;
+        }
+        const div = document.createElement('div');
+        div.className = 'story-line';
+        div.textContent = storyLines[i];
+        container.appendChild(div);
+        container.scrollTop = container.scrollHeight;
+        i++;
+        setTimeout(typeLine, 800);
+    }
+    typeLine();
+}
+
+function skipStory() {
+    goToFilesystem();
+}
+
+function goToFilesystem() {
+    document.getElementById('screen-story').classList.remove('active');
+    document.getElementById('screen-filesystem').classList.add('active');
+}
+
+// ============ ÉCRAN 5 : CARTE SYSTÈME ============
+function goToHome() {
+    document.getElementById('screen-filesystem').classList.remove('active');
+    document.getElementById('screen-home').classList.add('active');
+    document.getElementById('agent-display').textContent = `👤 ${agentName}`;
+}
+
+// ============ ÉCRAN 6 : ACCUEIL ============
+function startGame() {
+    window.location.href = 'game.html';
+}
+
+// Restore theme if already set
+const savedTheme = localStorage.getItem('rootquest-theme');
+if (savedTheme) {
+    document.documentElement.setAttribute('data-theme', savedTheme);
+}
+</script>
+
+</body>
+</html>
