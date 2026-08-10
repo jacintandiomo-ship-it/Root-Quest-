@@ -1,5 +1,5 @@
 /* ============================================
-   ROOT QUEST - MOTEUR DE JEU (CORRIGÉ)
+   ROOT QUEST - MOTEUR DE JEU (MONDE 1 + 2)
    ============================================ */
 
 class VirtualFS {
@@ -24,12 +24,16 @@ class VirtualFS {
     return '/' + stack.join('/');
   }
 
-  getNode(path) {
+  getNode(path, followSymlink = true) {
     const parts = this.resolvePath(path).split('/').filter(p => p);
     let node = this.root;
     for (const p of parts) {
       if (!node.children || !node.children[p]) return null;
       node = node.children[p];
+      if (followSymlink && node.type === 'symlink') {
+        node = this.getNode(node.target, true);
+        if (!node) return null;
+      }
     }
     return node;
   }
@@ -46,22 +50,58 @@ class VirtualFS {
     return { parent: node, name: name, path: resolved };
   }
 
-  ls(path) {
-    const target = path ? this.getNode(path) : this.getNode(this.cwd);
+  formatSize(node) {
+    if (node.type === 'dir') return '4096';
+    if (node.content) return String(node.content.length);
+    return '0';
+  }
+
+  formatPerms(node) {
+    return node.perms || (node.type === 'dir' ? 'rwxr-xr-x' : 'rw-r--r--');
+  }
+
+  ls(path, options = {}) {
+    const targetPath = path && !path.startsWith('-') ? path : null;
+    const target = targetPath ? this.getNode(targetPath) : this.getNode(this.cwd);
     if (!target) return { error: 'ls: aucun fichier ou dossier de ce type' };
     if (target.type === 'file') return { output: path };
-    const names = Object.keys(target.children).sort();
+
+    let names = Object.keys(target.children).sort();
+    if (!options.all) {
+      names = names.filter(n => !n.startsWith('.'));
+    }
+
+    if (options.long) {
+      const lines = names.map(n => {
+        const child = target.children[n];
+        const perms = (child.type === 'dir' ? 'd' : (child.type === 'symlink' ? 'l' : '-')) + this.formatPerms(child);
+        const owner = child.owner || 'root';
+        const group = child.group || 'root';
+        const size = this.formatSize(child);
+        const date = 'Aug 21 03:14';
+        const nameOut = child.type === 'symlink' ? n + ' -> ' + (child.target || '?') : n + (child.type === 'dir' ? '/' : '');
+        return `${perms} 1 ${owner} ${group} ${size.padStart(6)} ${date} ${nameOut}`;
+      });
+      return { output: lines.join('\n') || 'total 0' };
+    }
+
     const colored = names.map(n => {
       const child = target.children[n];
-      return child.type === 'dir' ? n + '/' : n;
+      return child.type === 'dir' ? n + '/' : (child.type === 'symlink' ? n + '@' : n);
     });
     return { output: colored.join('  ') || '(dossier vide)' };
   }
 
   cd(path) {
     if (!path || path === '~') { this.cwd = '/home/agent'; return { output: '' }; }
-    const target = this.getNode(path);
+    const target = this.getNode(path, false);
     if (!target) return { error: 'cd: ' + path + ': aucun fichier ou dossier de ce type' };
+    if (target.type === 'symlink') {
+      const real = this.getNode(path, true);
+      if (!real || real.type !== 'dir') return { error: 'cd: ' + path + ": n'est pas un dossier" };
+      this.cwd = this.resolvePath(target.target || path);
+      return { output: '' };
+    }
     if (target.type !== 'dir') return { error: 'cd: ' + path + ": n'est pas un dossier" };
     this.cwd = this.resolvePath(path);
     return { output: '' };
@@ -85,7 +125,7 @@ class VirtualFS {
     if (!info || !info.parent) return { error: 'mkdir: chemin invalide' };
     if (info.parent.type !== 'dir') return { error: 'mkdir: chemin invalide' };
     if (info.parent.children[info.name]) return { error: 'mkdir: ' + info.name + ': le fichier existe déjà' };
-    info.parent.children[info.name] = { type: 'dir', children: {} };
+    info.parent.children[info.name] = { type: 'dir', owner: 'agent', group: 'agent', perms: 'rwxr-xr-x', children: {} };
     return { output: '' };
   }
 
@@ -128,7 +168,6 @@ class VirtualFS {
     if (!srcNode) return { error: 'cp: ' + src + ': aucun fichier ou dossier de ce type' };
     if (srcNode.type === 'dir') return { error: 'cp: ' + src + ': est un dossier' };
 
-    // Si destination est un dossier existant, copier à l'intérieur
     const dstNode = this.getNode(dst);
     let dstInfo;
     if (dstNode && dstNode.type === 'dir') {
@@ -139,7 +178,10 @@ class VirtualFS {
     }
 
     if (!dstInfo || !dstInfo.parent) return { error: 'cp: chemin de destination invalide' };
-    dstInfo.parent.children[dstInfo.name] = { type: 'file', content: srcNode.content };
+    dstInfo.parent.children[dstInfo.name] = {
+      type: 'file', owner: srcNode.owner || 'agent', group: srcNode.group || 'agent',
+      perms: srcNode.perms || 'rw-r--r--', content: srcNode.content
+    };
     return { output: '' };
   }
 
@@ -150,7 +192,6 @@ class VirtualFS {
     const srcNode = srcInfo.parent.children[srcInfo.name];
     if (!srcNode) return { error: 'mv: ' + src + ': aucun fichier ou dossier de ce type' };
 
-    // Si destination est un dossier existant, déplacer à l'intérieur
     const dstNode = this.getNode(dst);
     let dstInfo;
     if (dstNode && dstNode.type === 'dir') {
@@ -170,9 +211,146 @@ class VirtualFS {
     const info = this.getParent(path);
     if (!info || !info.parent) return { error: 'touch: chemin invalide' };
     if (!info.parent.children[info.name]) {
-      info.parent.children[info.name] = { type: 'file', content: '' };
+      info.parent.children[info.name] = { type: 'file', owner: 'agent', group: 'agent', perms: 'rw-r--r--', content: '' };
     }
     return { output: '' };
+  }
+
+  // ===== MONDE 2 : PERMISSIONS =====
+
+  chmod(mode, path) {
+    if (!mode || !path) return { error: 'chmod: manque un argument' };
+    const info = this.getParent(path);
+    if (!info || !info.parent) return { error: 'chmod: chemin invalide' };
+    const target = info.parent.children[info.name];
+    if (!target) return { error: 'chmod: ' + info.name + ': aucun fichier ou dossier de ce type' };
+
+    // Mode numérique
+    if (/^[0-7]{3,4}$/.test(mode)) {
+      const map = { '0': '---', '1': '--x', '2': '-w-', '3': '-wx', '4': 'r--', '5': 'r-x', '6': 'rw-', '7': 'rwx' };
+      const digits = mode.split('');
+      if (digits.length === 3) {
+        target.perms = map[digits[0]] + map[digits[1]] + map[digits[2]];
+      } else {
+        // 4 digits : special bits
+        target.perms = map[digits[1]] + map[digits[2]] + map[digits[3]];
+        // On pourrait gérer SUID/SGID/sticky ici mais on garde simple
+      }
+      return { output: '' };
+    }
+
+    // Mode symbolique
+    let perms = target.perms || 'rw-r--r--';
+    const match = mode.match(/^([ugoa]*)([+-=])([rwxXst]+)$/);
+    if (!match) return { error: 'chmod: mode invalide: ' + mode };
+
+    const who = match[1] || 'a';
+    const op = match[2];
+    const what = match[3];
+
+    const apply = (section, chars) => {
+      let p = section;
+      for (const c of chars) {
+        if (op === '+') { if (!p.includes(c)) p += c; }
+        else if (op === '-') { p = p.replace(c, '-'); }
+        else if (op === '=') { p = chars.padEnd(3, '-').substring(0, 3); break; }
+      }
+      return p;
+    };
+
+    let newPerms = perms;
+    if (who.includes('u') || who.includes('a')) newPerms = apply(newPerms.substring(0, 3), what) + newPerms.substring(3);
+    if (who.includes('g') || who.includes('a')) {
+      newPerms = newPerms.substring(0, 3) + apply(newPerms.substring(3, 6), what) + newPerms.substring(6);
+    }
+    if (who.includes('o') || who.includes('a')) {
+      newPerms = newPerms.substring(0, 6) + apply(newPerms.substring(6, 9), what);
+    }
+
+    target.perms = newPerms;
+    return { output: '' };
+  }
+
+  chown(ownerSpec, path) {
+    if (!ownerSpec || !path) return { error: 'chown: manque un argument' };
+    const info = this.getParent(path);
+    if (!info || !info.parent) return { error: 'chown: chemin invalide' };
+    const target = info.parent.children[info.name];
+    if (!target) return { error: 'chown: ' + info.name + ': aucun fichier ou dossier de ce type' };
+
+    if (ownerSpec.includes(':')) {
+      const [owner, group] = ownerSpec.split(':');
+      if (owner) target.owner = owner;
+      if (group) target.group = group;
+    } else {
+      target.owner = ownerSpec;
+    }
+    return { output: '' };
+  }
+
+  chgrp(group, path) {
+    if (!group || !path) return { error: 'chgrp: manque un argument' };
+    const info = this.getParent(path);
+    if (!info || !info.parent) return { error: 'chgrp: chemin invalide' };
+    const target = info.parent.children[info.name];
+    if (!target) return { error: 'chgrp: ' + info.name + ': aucun fichier ou dossier de ce type' };
+    target.group = group;
+    return { output: '' };
+  }
+
+  ln(src, dst, symlink = false) {
+    if (!src || !dst) return { error: 'ln: manque un argument' };
+    const dstInfo = this.getParent(dst);
+    if (!dstInfo || !dstInfo.parent) return { error: 'ln: chemin de destination invalide' };
+
+    if (symlink) {
+      dstInfo.parent.children[dstInfo.name] = {
+        type: 'symlink', owner: 'agent', group: 'agent', perms: 'rwxrwxrwx',
+        target: src
+      };
+    } else {
+      const srcNode = this.getNode(src);
+      if (!srcNode) return { error: 'ln: ' + src + ': aucun fichier ou dossier de ce type' };
+      dstInfo.parent.children[dstInfo.name] = JSON.parse(JSON.stringify(srcNode));
+    }
+    return { output: '' };
+  }
+
+  df() {
+    return {
+      output: `Système de fichiers    Taille  Utilisé  Dispo  U%  Monté sur
+/dev/sda1               50G     12G    35G  26%  /
+tmpfs                  2,0G    512M   1,5G  26%  /dev/shm
+/dev/sdb1              100G     45G    50G  48%  /data`
+    };
+  }
+
+  du(path) {
+    const target = path ? this.getNode(path) : this.getNode(this.cwd);
+    if (!target) return { error: 'du: ' + path + ': aucun fichier ou dossier de ce type' };
+
+    const calcSize = (node) => {
+      if (node.type === 'file') return (node.content || '').length;
+      if (node.type === 'symlink') return 0;
+      let total = 4096;
+      if (node.children) {
+        for (const child of Object.values(node.children)) {
+          total += calcSize(child);
+        }
+      }
+      return total;
+    };
+
+    const size = calcSize(target);
+    const kb = Math.ceil(size / 1024);
+    const mb = (size / (1024 * 1024)).toFixed(1);
+
+    let display;
+    if (kb < 1024) display = kb + 'K';
+    else display = mb + 'M';
+
+    const name = path || '.';
+    return { output: display + '\t' + name };
   }
 }
 
@@ -227,7 +405,7 @@ class GameEngine {
   renderWorldsSidebar() {
     const worlds = [
       { num: 1, name: "Les Fondations", desc: "Navigation, fichiers", unlocked: true },
-      { num: 2, name: "Le Gardien", desc: "Permissions, liens", unlocked: false },
+      { num: 2, name: "Le Gardien", desc: "Permissions, liens", unlocked: true },
       { num: 3, name: "L'Arsenal", desc: "Paquets, processus", unlocked: false },
       { num: 4, name: "Les Réseaux", desc: "Services, SSH", unlocked: false },
       { num: 5, name: "L'Architecte", desc: "Bash, scripts", unlocked: false },
@@ -239,7 +417,8 @@ class GameEngine {
     container.innerHTML = '';
     worlds.forEach(w => {
       const div = document.createElement('div');
-      div.className = 'world-item' + (w.unlocked ? '' : ' locked') + (w.num === 1 ? ' active' : '');
+      const isActive = w.num === LEVELS[this.levelIndex].world;
+      div.className = 'world-item' + (w.unlocked ? '' : ' locked') + (isActive ? ' active' : '');
       div.innerHTML = `
         <div class="world-num">${w.num}</div>
         <div class="world-info">
@@ -266,7 +445,7 @@ class GameEngine {
 
   loadLevel(index) {
     if (index >= LEVELS.length) {
-      this.print('🎉 Félicitations ! Vous avez terminé le Monde 1 !', 'success');
+      this.print('🎉 Félicitations ! Vous avez terminé tous les mondes disponibles !', 'success');
       this.updateProgress();
       return;
     }
@@ -287,6 +466,7 @@ class GameEngine {
     document.getElementById('mission-card-objective').innerHTML = lvl.objective.replace(/\n/g, '<br>');
 
     this.updateHints(lvl);
+    this.renderWorldsSidebar();
     this.updateProgress();
 
     this.historyEl.innerHTML = '';
@@ -352,7 +532,15 @@ class GameEngine {
       let result = { output: '', error: null };
 
       switch (cmd) {
-        case 'ls': result = this.fs.ls(args[0]); break;
+        case 'ls': {
+          const opts = { long: false, all: false };
+          const pathArg = args.find(a => !a.startsWith('-'));
+          const optStr = args.filter(a => a.startsWith('-')).join('');
+          if (optStr.includes('l')) opts.long = true;
+          if (optStr.includes('a')) opts.all = true;
+          result = this.fs.ls(pathArg, opts);
+          break;
+        }
         case 'cd': result = this.fs.cd(args[0]); break;
         case 'pwd': result = this.fs.pwd(); break;
         case 'cat': result = this.fs.cat(args[0]); break;
@@ -368,25 +556,44 @@ class GameEngine {
         case 'cp': result = this.fs.cp(args[0], args[1]); break;
         case 'mv': result = this.fs.mv(args[0], args[1]); break;
         case 'touch': result = this.fs.touch(args[0]); break;
+        case 'chmod': result = this.fs.chmod(args[0], args[1]); break;
+        case 'chown': result = this.fs.chown(args[0], args[1]); break;
+        case 'chgrp': result = this.fs.chgrp(args[0], args[1]); break;
+        case 'ln':
+          if (args[0] === '-s') {
+            result = this.fs.ln(args[1], args[2], true);
+          } else {
+            result = this.fs.ln(args[0], args[1], false);
+          }
+          break;
+        case 'df': result = this.fs.df(); break;
+        case 'du': result = this.fs.du(args.find(a => !a.startsWith('-'))); break;
         case 'clear': this.historyEl.innerHTML = ''; result = { output: '' }; break;
         case 'help':
           result = {
             output: `Commandes disponibles :
-  ls [chemin]       - Lister le contenu
-  cd [chemin]       - Changer de dossier
-  pwd               - Afficher le dossier courant
-  cat <fichier>     - Lire un fichier
-  mkdir <dossier>   - Créer un dossier
-  rmdir <dossier>   - Supprimer un dossier vide
-  rm <fichier>      - Supprimer un fichier
-  rm -r <dossier>   - Supprimer un dossier et son contenu
-  cp <src> <dst>    - Copier
-  mv <src> <dst>    - Déplacer
-  touch <fichier>   - Créer un fichier vide
-  man <commande>    - Lire le manuel
-  hint              - Afficher un indice
-  clear             - Effacer le terminal
-  help              - Cette aide`
+  ls [options] [chemin]   - Lister (options: -l, -a, -la)
+  cd [chemin]             - Changer de dossier
+  pwd                     - Afficher le dossier courant
+  cat <fichier>           - Lire un fichier
+  mkdir <dossier>         - Créer un dossier
+  rmdir <dossier>         - Supprimer un dossier vide
+  rm <fichier>            - Supprimer un fichier
+  rm -r <dossier>         - Supprimer un dossier et son contenu
+  cp <src> <dst>          - Copier
+  mv <src> <dst>          - Déplacer
+  touch <fichier>         - Créer un fichier vide
+  chmod <mode> <fichier>  - Changer permissions (ex: 755, u+x)
+  chown <user> <fichier>  - Changer propriétaire
+  chgrp <group> <fichier> - Changer groupe
+  ln <src> <dst>          - Lien dur
+  ln -s <src> <dst>       - Lien symbolique
+  df -h                   - Espace disque
+  du -sh <chemin>         - Taille d'un dossier
+  man <commande>          - Lire le manuel
+  hint                    - Afficher un indice
+  clear                   - Effacer le terminal
+  help                    - Cette aide`
           };
           break;
         case 'man':
@@ -432,7 +639,6 @@ class GameEngine {
     localStorage.setItem('rootquest-xp', this.totalXP);
     localStorage.setItem('rootquest-level', this.levelIndex + 1);
 
-    // CORRECTION XP : mettre à jour l'affichage immédiatement
     this.updateXPDisplay();
 
     const learned = JSON.parse(localStorage.getItem('rootquest-cmdhistory') || '[]');
@@ -448,7 +654,7 @@ class GameEngine {
 
     const nextBtn = document.getElementById('victory-next');
     if (this.levelIndex + 1 >= LEVELS.length) {
-      nextBtn.textContent = '🏆 Monde 1 terminé !';
+      nextBtn.textContent = '🏆 Tous les mondes terminés !';
     } else {
       nextBtn.textContent = 'Niveau suivant ➜';
     }
